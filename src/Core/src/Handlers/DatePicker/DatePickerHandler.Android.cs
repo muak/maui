@@ -31,7 +31,22 @@ namespace Microsoft.Maui.Handlers
 		protected override void ConnectHandler(MauiDatePicker platformView)
 		{
 			base.ConnectHandler(platformView);
+			platformView.ViewAttachedToWindow += OnViewAttachedToWindow;
+			platformView.ViewDetachedFromWindow += OnViewDetachedFromWindow;
 
+			if (platformView.IsAttachedToWindow)
+				DeviceDisplay.MainDisplayInfoChanged += OnMainDisplayInfoChanged;
+		}
+
+		void OnViewDetachedFromWindow(object? sender, View.ViewDetachedFromWindowEventArgs e)
+		{
+			// I tested and this is called when an activity is destroyed
+			DeviceDisplay.MainDisplayInfoChanged -= OnMainDisplayInfoChanged;
+		}
+
+		void OnViewAttachedToWindow(object? sender, View.ViewAttachedToWindowEventArgs e)
+		{
+			DeviceDisplay.MainDisplayInfoChanged -= OnMainDisplayInfoChanged;
 			DeviceDisplay.MainDisplayInfoChanged += OnMainDisplayInfoChanged;
 		}
 
@@ -44,6 +59,8 @@ namespace Microsoft.Maui.Handlers
 				_dialog = null;
 			}
 
+			platformView.ViewAttachedToWindow -= OnViewAttachedToWindow;
+			platformView.ViewDetachedFromWindow -= OnViewDetachedFromWindow;
 			DeviceDisplay.MainDisplayInfoChanged -= OnMainDisplayInfoChanged;
 
 			base.DisconnectHandler(platformView);
