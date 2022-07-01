@@ -14,7 +14,6 @@ namespace Microsoft.Maui.Handlers
 			return platformDatePicker;
 		}
 
-#if !MACCATALYST
 		static void OnDoneClicked(object sender)
 		{
 			if (sender is DatePickerHandler handler)
@@ -23,7 +22,6 @@ namespace Microsoft.Maui.Handlers
 				handler.PlatformView.ResignFirstResponder();
 			}
 		}
-#endif
 
 		internal UIDatePicker? DatePickerDialog { get { return PlatformView?.InputView as UIDatePicker; } }
 
@@ -33,14 +31,10 @@ namespace Microsoft.Maui.Handlers
 		{
 			PlatformView.SetDoneClicked(OnDoneClicked, this);
 			PlatformView.SetDataContext(this);
-			PlatformView.SetPickerDialogActions(OnStarted, null, null);
+			PlatformView.SetPickerDialogActions(OnStarted, OnEnded, OnValueChanged);
 
 			if (DatePickerDialog is UIDatePicker picker)
 			{
-				//picker.EditingDidBegin += OnStarted;
-				//picker.EditingDidEnd += OnEnded;
-				//picker.ValueChanged += OnValueChanged;
-
 				var date = VirtualView?.Date;
 				if (date is DateTime dt)
 				{
@@ -53,15 +47,8 @@ namespace Microsoft.Maui.Handlers
 
 		protected override void DisconnectHandler(MauiDatePicker platformView)
 		{
-			PlatformView.SetDoneClicked(null, null);
-			PlatformView.SetPickerDialogActions(null, null, null);
-
-			//if (DatePickerDialog is UIDatePicker picker)
-			//{
-			//	picker.EditingDidBegin -= OnStarted;
-			//	picker.EditingDidEnd -= OnEnded;
-			//	picker.ValueChanged -= OnValueChanged;
-			//}
+			platformView.SetDoneClicked(null, null);
+			platformView.SetPickerDialogActions(null, null, null);
 
 			base.DisconnectHandler(platformView);
 		}
@@ -113,13 +100,16 @@ namespace Microsoft.Maui.Handlers
 			handler.PlatformView?.UpdateTextAlignment(datePicker);
 		}
 
-		void OnValueChanged(object? sender, EventArgs? e)
+		static void OnValueChanged(object? sender)
 		{
-			if (UpdateImmediately)  // Platform Specific
-				SetVirtualViewDate();
+			if (sender is DatePickerHandler datePickerHandler)
+			{
+				if (datePickerHandler.UpdateImmediately)  // Platform Specific
+					datePickerHandler.SetVirtualViewDate();
 
-			if (VirtualView != null)
-				VirtualView.IsFocused = true;
+				if (datePickerHandler.VirtualView != null)
+					datePickerHandler.VirtualView.IsFocused = true;
+			}
 		}
 
 		static void OnStarted(object? sender)
@@ -128,10 +118,10 @@ namespace Microsoft.Maui.Handlers
 				datePickerHandler.VirtualView.IsFocused = true;
 		}
 
-		void OnEnded(object? sender, EventArgs eventArgs)
+		static void OnEnded(object? sender)
 		{
-			if (VirtualView != null)
-				VirtualView.IsFocused = false;
+			if (sender is IDatePickerHandler datePickerHandler && datePickerHandler.VirtualView != null)
+				datePickerHandler.VirtualView.IsFocused = false;
 		}
 
 		void SetVirtualViewDate()
